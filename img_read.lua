@@ -3,13 +3,13 @@
 -------------------------------surveillance_data/three_wheeler
 -------------------------------surveillance_data/two_wheeler
 -- Resize it to 30 X 30
--- Normalize them feature wise (optional)
--- Save the data and normalization params (mean,std) as vehicle_3_class_data
+
 
 
 require 'nn'
 require 'image'
 require 'torch'
+require 'xlua'
 
 
 
@@ -31,19 +31,52 @@ dataset = {
     labels = torch.Tensor(nImages)
 }
 
+--local img_counter = torch.Tensor(3):fill(0)
+
+local img_counter = 0
 for i, path in ipairs(data_path) do
+    xlua.progress(i,3)   -- # 3 are the number of directories to be read
     local images_list  = paths.dir(path)
     --  create the dataset
     for j =  1, #images_list do
-        print(j)
-        img = image.load(path .. images_list[j])
-        print('Size of image is ', img:size())
+        --xlua.progress(img_counter,1000)
+        img_name = path .. images_list[j]
+        index,_ = string.find(img_name,'.jpg')
+            if index ~= nill then
+                --print(img_name)
+                
+                local status = pcall( -- Exception handling if image cant be loded
+                function () 
+                    local img = image.load(img_name) 
+                    
+                    img = image.scale(img,30,30)
+                    
+                    img_counter = img_counter + 1
+
+                    dataset.images[{{img_counter},{},{},{}}] = img
+                    dataset.labels[img_counter] = i
+                    
+                end) 
+                if (img_counter % 1000) == 0 then
+                    break 
+                end 
+                    
+
+                --print('Size of image is ', img:size())
+            end
     end
+end           
+
+print('dataset Created of size ',dataset)
+
+print('==> Saving the dataset')
+torch.save('vehicle_data_3_class.dat',dataset)
+    
 
 
 
 
-end
+
 
 
 
