@@ -10,6 +10,8 @@ require 'nn'
 require 'image'
 require 'torch'
 require 'xlua'
+local py = require('fb.python')
+
 
 
 
@@ -31,7 +33,56 @@ dataset = {
     labels = torch.Tensor(nImages)
 }
 
---local img_counter = torch.Tensor(3):fill(0)
+
+local py = require('fb.python')
+py.exec([=[
+import cv2
+import numpy as np
+
+def sharpen(img):
+    img = np.uint8(img)
+    img_gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+
+    canny = cv2.Canny(img_gray,100,200) - 200
+    canny =  np.divide(canny,8) # to reduce the affect of sharpening
+    # Add both images
+
+    canny_3d = np.dstack((canny,canny,canny))
+
+    sharp_img =  cv2.add(img,canny_3d)
+
+    #cv2.imshow('Sharpen Image', sharp_img)
+    #cv2.waitKey()
+    return sharp_img
+]=])
+
+function sharpen(img)
+
+
+    -- print('In sharpen()')
+
+    -- Image read by torch.load() is of size (Channels,rows,cols) but OpenCV expects (rows, cols, channels) therefore transpose() is necessary
+    -- moreover we need to scale the pixel values of the image to 0-255 thats why mul(255)
+
+
+
+    img = img:transpose(1,3):mul(255):transpose(1,2)
+
+    
+
+    sharpen_img = py.eval('sharpen(img)',{img = img})
+    --print('sharpen image shape ',sharpen_img:size())
+
+    -- Normalize the image 
+
+    --sharpen_img:div(255):transpose(1,2):transpose(1,3) -- Converting back to same shape as Lua tensor
+    sharpen_img:div(255)
+    
+
+    return sharpen_img
+
+end
+
 
 local img_counter = 0
 for i, path in ipairs(data_path) do
@@ -52,11 +103,23 @@ for i, path in ipairs(data_path) do
                     img = image.scale(img,30,30)
                     
                     img_counter = img_counter + 1
-
+                    -- Call a function to Sharpen the image 'img'
+                    img = sharpen(img)
+                    img:float()
                     dataset.images[{{img_counter},{},{},{}}] = img
                     dataset.labels[img_counter] = i
                     
                 end) 
+                -- local img = image.load(img_name) 
+                
+                -- img = image.scale(img,30,30)
+                
+                -- img_counter = img_counter + 1
+                -- -- Call a function to Sharpen the image 'img'
+                -- img = sharpen(img)
+                -- dataset.images[{{img_counter},{},{},{}}] = img
+                -- dataset.labels[img_counter] = i
+
                 if (img_counter % 1000) == 0 then
                     break 
                 end 
@@ -80,48 +143,4 @@ torch.save('vehicle_data_3_class.dat',dataset)
 
 
 
-
-
--- nImagePlanes = 3 -- rgb
--- kitti_stereo_dataset = {
--- image_left = torch.Tensor(nImages,nImagePlanes,imgRows,imgCols),
--- image_right = torch.Tensor(nImages,nImagePlanes,imgRows,imgCols),
--- image_gt_depth = torch.Tensor(nImages,1,imgRows,imgCols)}
-
-
--- --train_img_dataset = {}
--- --gt_train_img_dataset = {}
-
--- i=1
-
--- for j,img_name in ipairs(train_images_list_l) do
---     index,_ = string.find(img_name,'.png')
---     if index ~= nill then
---         --print(img_name)
---         if img_name:sub(index-1,index-1) == '0' then
---             print('Image stored' .. i)
---             --print(image.crop(image.load(train_data_path_l .. img_name),x1,y1,x2,y2):size())
-
---             --image.display(image.crop(image.load(train_data_path_l .. img_name),x1,y1,x2,y2))
---             kitti_stereo_dataset.image_left[i] = image.crop(image.load(train_data_path_l .. img_name),x1,y1,x2,y2)    
---         	--print(kitti_stereo_dataset.image_left[1]:size())
---         	--image.display(kitti_stereo_dataset.image_left[1])
---             kitti_stereo_dataset.image_right[{{i},{},{},{}}] = image.crop(image.load(train_data_path_r .. train_images_list_r[j]),x1,y1,x2,y2)    
---             kitti_stereo_dataset.image_gt_depth[{{i},{1},{},{}}] = image.crop(image.load(gt_train_path .. gt_train_images_list[i+2]),x1,y1,x2,y2)
---             i = i+1    
---         end
---     end
---     if i == maxImages+1 then
---         break
---     end
-    
--- end
-
-
--- print('Images stored in table')
-
--- --torch.save('kitti_stereo_dataset_100.dat',torch.Tensor(kitti_stereo_dataset))
--- torch.save('kitti_stereo_dataset_190_cropped.dat',kitti_stereo_dataset)
--- print('Tensor stored to disc.')
--- --image.display(train_img_dataset[3])
--- --image.display(gt_train_img_dataset[3])
+-- NOTE: Check whether the images saved in the dataset are in correct format or not. Try to display them in iTorch in browser.

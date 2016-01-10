@@ -28,6 +28,7 @@ def sharpen(img):
 	
 	cv2.imshow('Bus gray',img_gray)
 	canny = cv2.Canny(img_gray,100,200)
+	canny =  np.divide(canny,8)
 	cv2.imshow('Canny',canny)
 	
 	# Add both images
@@ -45,6 +46,7 @@ def sharpen(img):
 -- Image read by torch.load() is of size (Channels,rows,cols) but OpenCV expects (rows, cols, channels) therefore transpose() is necessary
 -- moreover we need to scale the pixel values of the image to 0-255 thats why mul(255)
 
+
 img = image.load('bus.jpg'):transpose(1,3):mul(255):transpose(1,2)
 
 sharpen_img = py.eval('sharpen(img)',{img = img})
@@ -52,5 +54,5 @@ print('sharpen image shape ',sharpen_img:size())
 
 -- Normalize the image 
 
-print(sharpen_img:div(255):min())
+sharpen_img:div(255):transpose(1,2):transpose(1,3) -- Converting back to same shape as Lua tensor
 
