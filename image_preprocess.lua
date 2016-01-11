@@ -22,13 +22,14 @@ import numpy as np
 def sharpen(img):
 	print 'shape of the img received my sharpen function is ',img.shape
 	#img =  cv2.imread(img_name)
+	print 'datatype of received tensor is ',img.dtype
 	img = np.uint8(img)   # converting the signed to unsigned coz cvtColor works with unsigned images
 	cv2.imshow('Bus Image',img)
 	img_gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 	
 	cv2.imshow('Bus gray',img_gray)
 	canny = cv2.Canny(img_gray,100,200)
-	canny =  np.divide(canny,8)
+	canny =  np.divide(canny,7)
 	cv2.imshow('Canny',canny)
 	
 	# Add both images
@@ -38,7 +39,7 @@ def sharpen(img):
 	sharp_img = cv2.add(img,canny_3d)
 	cv2.imshow('sharpen',sharp_img)
 	cv2.waitKey(0)
-	return sharp_img
+	return np.float64(sharp_img)
 ]=])
 
 
@@ -56,3 +57,26 @@ print('sharpen image shape ',sharpen_img:size())
 
 sharpen_img:div(255):transpose(1,2):transpose(1,3) -- Converting back to same shape as Lua tensor
 
+
+-- The following code checks if the sharpened image converted to lua tensor is still a decent image or not
+-- There is some problem with displaying the image in lua(Some colorspace problem maybe), So i decided to display using opencv
+
+-- Take the lua image tensor pass it to the python opencv script 
+
+--Python opencv script
+
+py.exec([=[
+import cv2
+import numpy as np
+
+def display(img):
+	
+	img = np.uint8(img)   # converting the signed to unsigned coz cvtColor works with unsigned images
+	cv2.imshow('Image_displayed again',img)
+	
+	cv2.waitKey(0)
+	
+]=])
+
+sharpen_img:mul(255):transpose(1,3):transpose(1,2)
+py.eval('display(img)',{img = sharpen_img})
