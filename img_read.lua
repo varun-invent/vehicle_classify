@@ -53,7 +53,7 @@ def sharpen(img):
 
     #cv2.imshow('Sharpen Image', sharp_img)
     #cv2.waitKey()
-    return sharp_img
+    return np.float64(sharp_img)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 ]=])
 
 function sharpen(img)
@@ -75,8 +75,8 @@ function sharpen(img)
 
     -- Normalize the image 
 
-    --sharpen_img:div(255):transpose(1,2):transpose(1,3) -- Converting back to same shape as Lua tensor
-    sharpen_img:div(255)
+    sharpen_img:div(255):transpose(1,2):transpose(1,3) -- Converting back to same shape as Lua tensor
+    --sharpen_img:div(255)
     
 
     return sharpen_img
@@ -143,4 +143,3 @@ torch.save('vehicle_data_3_class.dat',dataset)
 
 
 
--- NOTE: Check whether the images saved in the dataset are in correct format or not. Try to display them in iTorch in browser.
